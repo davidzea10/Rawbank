@@ -7,3 +7,17 @@ POST https://rawbank.onrender.com/api/auth/register
 
 2. Connexion
 POST https://rawbank.onrender.com/api/auth/login
+
+
+API 3 – Récupérer le profil utilisateur
+Méthode : GET
+URL : https://rawbank.onrender.com/api/users/:id
+
+
+API 4 – Mettre à jour le profil utilisateur
+Méthode : PUT
+URL : https://rawbank.onrender.com/api/users/:id
+
+API 5 – Supprimer le compte
+Méthode : DELETE
+URL : https://rawbank.onrender.com/api/users/:id

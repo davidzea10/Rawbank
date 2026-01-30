@@ -9,6 +9,15 @@ const OPERATEURS_MOBILE_MONEY = {
 const register = async (req, res, next) => {
   try {
     const body = req.body && typeof req.body === 'object' ? req.body : {};
+    const contentType = req.get('Content-Type') || '(absent)';
+
+    // Debug: voir ce que le serveur reçoit (mot de passe masqué)
+    const debugBody = { ...body };
+    if (debugBody.password) debugBody.password = '***';
+    if (debugBody.data?.password) debugBody.data.password = '***';
+    if (debugBody.user?.password) debugBody.user.password = '***';
+    console.log('[REGISTER] Content-Type:', contentType, '| Body reçu:', JSON.stringify(debugBody));
+
     const data = body.data || body.user || body;
     const email = data.email;
     const password = data.password;
@@ -25,9 +34,15 @@ const register = async (req, res, next) => {
       if (!prenom) manquants.push('prenom');
       if (!nom) manquants.push('nom');
       if (!mobile_money_lie) manquants.push('mobile_money_lie');
+      const clesRecues = Object.keys(body).concat(Object.keys(data || {})).filter((k, i, a) => a.indexOf(k) === i);
       return res.status(400).json({
         ok: false,
-        message: `Champs requis manquants: ${manquants.join(', ')}. Envoyer un JSON avec Content-Type: application/json`,
+        message: `Champs requis manquants: ${manquants.join(', ')}`,
+        debug: {
+          cles_recues: clesRecues,
+          content_type: contentType,
+          astuce: 'Vérifier que le body est un JSON avec Content-Type: application/json',
+        },
       });
     }
 
@@ -150,13 +165,59 @@ const login = async (req, res, next) => {
       throw error;
     }
 
+    const id = data.user.id;
+    const metadata = data.user.user_metadata || {};
+
+    const { data: utilisateur } = await supabase
+      .from('utilisateurs')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    const { data: profil } = await supabase
+      .from('profils_utilisateurs')
+      .select('*')
+      .eq('id_utilisateur', id)
+      .single();
+
+    const { data: comptes } = await supabase
+      .from('comptes_mobile_money')
+      .select('*')
+      .eq('id_utilisateur', id);
+
+    let detailsEntrepreneur = null;
+    if (profil?.type_profil === 'entrepreneur') {
+      const { data: details } = await supabase
+        .from('details_entrepreneurs')
+        .select('*')
+        .eq('id_utilisateur', id)
+        .single();
+      detailsEntrepreneur = details;
+    }
+
+    const user = {
+      id: utilisateur?.id ?? id,
+      email: utilisateur?.email ?? data.user.email,
+      numero_telephone: utilisateur?.numero_telephone ?? metadata.numero_telephone ?? null,
+      date_creation: utilisateur?.date_creation ?? null,
+      date_mise_a_jour: utilisateur?.date_mise_a_jour ?? null,
+      est_actif: utilisateur?.est_actif ?? true,
+      derniere_connexion: utilisateur?.derniere_connexion ?? null,
+      profil: profil
+        ? { ...profil }
+        : {
+            prenom: metadata.prenom ?? null,
+            nom: metadata.nom ?? null,
+            type_profil: 'particulier',
+          },
+      comptes_mobile_money: Array.isArray(comptes) ? comptes : [],
+      details_entrepreneur: detailsEntrepreneur,
+    };
+
     res.json({
       ok: true,
       message: 'Connexion réussie',
-      user: {
-        id: data.user.id,
-        email: data.user.email,
-      },
+      user,
       session: {
         access_token: data.session.access_token,
         refresh_token: data.session.refresh_token,
