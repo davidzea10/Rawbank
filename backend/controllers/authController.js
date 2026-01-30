@@ -1,17 +1,32 @@
 const { supabase } = require('../config/supabase');
 
+const OPERATEURS_MOBILE_MONEY = {
+  orange: 'Orange Money',
+  mpesa: 'M-Pesa',
+  airtel: 'Airtel Money',
+};
+
 const register = async (req, res, next) => {
   try {
-    const { email, password, numero_telephone } = req.body;
+    const { email, password, numero_telephone, prenom, nom, mobile_money_lie } = req.body;
 
-    if (!email || !password || !numero_telephone) {
+    if (!email || !password || !numero_telephone || !prenom || !nom || !mobile_money_lie) {
       return res.status(400).json({
         ok: false,
-        message: 'email, password et numero_telephone sont requis',
+        message: 'email, password, numero_telephone, prenom, nom et mobile_money_lie sont requis',
       });
     }
 
-    const numero = numero_telephone.replace(/\s/g, '');
+    const numero = String(numero_telephone).replace(/\s/g, '');
+    const operateurKey = String(mobile_money_lie).toLowerCase().trim();
+    const operateur = OPERATEURS_MOBILE_MONEY[operateurKey] || operateurKey;
+
+    if (!['Orange Money', 'M-Pesa', 'Airtel Money'].includes(operateur)) {
+      return res.status(400).json({
+        ok: false,
+        message: "mobile_money_lie doit être: 'orange', 'mpesa' ou 'airtel'",
+      });
+    }
 
     const { data: donneesOperateur, error: errOperateur } = await supabase
       .from('donnees_operateurs')
@@ -31,7 +46,7 @@ const register = async (req, res, next) => {
       email,
       password,
       options: {
-        data: { numero_telephone: numero },
+        data: { numero_telephone: numero, prenom, nom },
       },
     });
 
@@ -46,18 +61,36 @@ const register = async (req, res, next) => {
       return res.status(500).json({ ok: false, message: 'Erreur lors de la création du compte' });
     }
 
-    const { error: insertError } = await supabase.from('utilisateurs').insert({
+    const { error: insertUserError } = await supabase.from('utilisateurs').insert({
       id: authData.user.id,
       email: authData.user.email,
       numero_telephone: numero,
     });
 
-    if (insertError) {
-      if (insertError.code === '23505') {
+    if (insertUserError) {
+      if (insertUserError.code === '23505') {
         return res.status(400).json({ ok: false, message: 'Ce numéro ou email est déjà enregistré' });
       }
-      throw insertError;
+      throw insertUserError;
     }
+
+    const { error: insertProfilError } = await supabase.from('profils_utilisateurs').insert({
+      id_utilisateur: authData.user.id,
+      type_profil: 'particulier',
+      prenom: String(prenom).trim(),
+      nom: String(nom).trim(),
+    });
+
+    if (insertProfilError) throw insertProfilError;
+
+    const { error: insertCompteError } = await supabase.from('comptes_mobile_money').insert({
+      id_utilisateur: authData.user.id,
+      operateur,
+      numero_compte: numero,
+      est_principal: true,
+    });
+
+    if (insertCompteError) throw insertCompteError;
 
     res.status(201).json({
       ok: true,
@@ -66,6 +99,9 @@ const register = async (req, res, next) => {
         id: authData.user.id,
         email: authData.user.email,
         numero_telephone: numero,
+        prenom: String(prenom).trim(),
+        nom: String(nom).trim(),
+        mobile_money_lie: operateur,
       },
       session: authData.session
         ? {
