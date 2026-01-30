@@ -164,4 +164,44 @@ const updateProfile = async (req, res, next) => {
   }
 };
 
-module.exports = { getProfile, updateProfile };
+const deleteAccount = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    // if (req.user?.id !== id) {
+    //   return res.status(403).json({ ok: false, message: 'Accès non autorisé' });
+    // } // JWT désactivé temporairement
+
+    const { data: utilisateur, error: errUser } = await supabase
+      .from('utilisateurs')
+      .select('id')
+      .eq('id', id)
+      .single();
+
+    if (errUser || !utilisateur) {
+      return res.status(404).json({ ok: false, message: 'Utilisateur non trouvé' });
+    }
+
+    const { error: errDelete } = await supabase
+      .from('utilisateurs')
+      .delete()
+      .eq('id', id);
+
+    if (errDelete) throw errDelete;
+
+    const { error: errAuth } = await supabase.auth.admin.deleteUser(id);
+
+    if (errAuth) {
+      console.warn('Auth user deletion warning:', errAuth.message);
+    }
+
+    res.json({
+      ok: true,
+      message: 'Compte supprimé avec succès',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { getProfile, updateProfile, deleteAccount };
