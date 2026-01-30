@@ -1,0 +1,9 @@
+API Auth – Rawbank
+Base URL : https://rawbank.onrender.com
+
+1. Inscription
+POST https://rawbank.onrender.com/api/auth/register
+
+
+2. Connexion
+POST https://rawbank.onrender.com/api/auth/login

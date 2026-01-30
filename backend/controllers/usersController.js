@@ -4,9 +4,9 @@ const getProfile = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    if (req.user.id !== id) {
-      return res.status(403).json({ ok: false, message: 'Accès non autorisé' });
-    }
+    // if (req.user?.id !== id) {
+    //   return res.status(403).json({ ok: false, message: 'Accès non autorisé' });
+    // } // JWT désactivé temporairement
 
     const { data: utilisateur, error: errUser } = await supabase
       .from('utilisateurs')
@@ -70,9 +70,9 @@ const updateProfile = async (req, res, next) => {
       description_activite,
     } = req.body;
 
-    if (req.user.id !== id) {
-      return res.status(403).json({ ok: false, message: 'Accès non autorisé' });
-    }
+    // if (req.user?.id !== id) {
+    //   return res.status(403).json({ ok: false, message: 'Accès non autorisé' });
+    // } // JWT désactivé temporairement
 
     const { data: profilExistant } = await supabase
       .from('profils_utilisateurs')

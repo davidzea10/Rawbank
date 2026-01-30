@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const usersController = require('../controllers/usersController');
-const { verifyToken } = require('../middlewares/authMiddleware');
+// const { verifyToken } = require('../middlewares/authMiddleware'); // JWT désactivé temporairement
 
-router.get('/:id', verifyToken, usersController.getProfile);
-router.put('/:id', verifyToken, usersController.updateProfile);
+router.get('/:id', usersController.getProfile);
+router.put('/:id', usersController.updateProfile);
 
 module.exports = router;
