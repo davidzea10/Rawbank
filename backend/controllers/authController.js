@@ -8,12 +8,26 @@ const OPERATEURS_MOBILE_MONEY = {
 
 const register = async (req, res, next) => {
   try {
-    const { email, password, numero_telephone, prenom, nom, mobile_money_lie } = req.body;
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    const data = body.data || body.user || body;
+    const email = data.email;
+    const password = data.password;
+    const numero_telephone = data.numero_telephone ?? data.numeroTelephone ?? data.numero;
+    const prenom = data.prenom ?? data.firstName ?? data.prenomUtilisateur;
+    const nom = data.nom ?? data.lastName ?? data.nom_famille;
+    const mobile_money_lie = data.mobile_money_lie ?? data.mobileMoneyLie ?? data.mobile_money ?? data.mobileMoney ?? data.operateur;
 
     if (!email || !password || !numero_telephone || !prenom || !nom || !mobile_money_lie) {
+      const manquants = [];
+      if (!email) manquants.push('email');
+      if (!password) manquants.push('password');
+      if (!numero_telephone) manquants.push('numero_telephone');
+      if (!prenom) manquants.push('prenom');
+      if (!nom) manquants.push('nom');
+      if (!mobile_money_lie) manquants.push('mobile_money_lie');
       return res.status(400).json({
         ok: false,
-        message: 'email, password, numero_telephone, prenom, nom et mobile_money_lie sont requis',
+        message: `Champs requis manquants: ${manquants.join(', ')}. Envoyer un JSON avec Content-Type: application/json`,
       });
     }
 
