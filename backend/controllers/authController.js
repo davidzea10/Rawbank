@@ -1,4 +1,5 @@
 const { supabase } = require('../config/supabase');
+const { normalizePhone } = require('../utils/normalizePhone');
 
 const OPERATEURS_MOBILE_MONEY = {
   orange: 'Orange Money',
@@ -46,7 +47,7 @@ const register = async (req, res, next) => {
       });
     }
 
-    const numero = String(numero_telephone).replace(/\s/g, '');
+    const numero = normalizePhone(numero_telephone);
     const operateurKey = String(mobile_money_lie).toLowerCase().trim();
     const operateur = OPERATEURS_MOBILE_MONEY[operateurKey] || operateurKey;
 

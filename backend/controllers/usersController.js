@@ -1,4 +1,5 @@
 const { supabase } = require('../config/supabase');
+const rateService = require('../services/rateService');
 
 const getProfile = async (req, res, next) => {
   try {
@@ -180,4 +181,108 @@ const deleteAccount = async (req, res, next) => {
   }
 };
 
-module.exports = { getProfile, updateProfile, deleteAccount };
+const getCredits = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ ok: false, message: 'id requis' });
+    }
+
+    let credits = [];
+    let scoresByDemande = {};
+
+    const { data: creditsData, error: errCredits } = await supabase
+      .from('credits')
+      .select('id, montant, mensualite, duree_mois, taux_interet, date_debut, date_fin, statut, id_demande')
+      .eq('id_utilisateur', id)
+      .in('statut', ['active', 'pending'])
+      .order('date_debut', { ascending: false });
+
+    if (errCredits) throw errCredits;
+    credits = creditsData || [];
+
+    if (credits.length > 0) {
+      const demandeIds = credits.map((c) => c.id_demande).filter(Boolean);
+      if (demandeIds.length > 0) {
+        const { data: demandes } = await supabase
+          .from('demandes_credit')
+          .select('id, score_actuel')
+          .in('id', demandeIds);
+        (demandes || []).forEach((d) => {
+          scoresByDemande[d.id] = d.score_actuel;
+        });
+      }
+    }
+
+    const result = credits.map((c) => {
+      const total = Number(c.mensualite) * Number(c.duree_mois);
+      const duree = Number(c.duree_mois);
+      const dateD = new Date(c.date_debut);
+      const score = c.id_demande ? scoresByDemande[c.id_demande] : null;
+      return {
+        id: c.id,
+        score,
+        amount: Number(c.montant),
+        monthlyPayment: Number(c.mensualite),
+        totalPayments: duree,
+        tauxInteret: Number(c.taux_interet),
+        dateDebut: c.date_debut,
+        dateFin: c.date_fin,
+        statut: c.statut,
+        totalArembourser: total,
+        _dateDebut: dateD,
+      };
+    });
+
+    const creditIds = result.map((r) => r.id);
+    if (creditIds.length > 0) {
+      const { data: remb } = await supabase
+        .from('remboursements')
+        .select('id_credit, montant')
+        .in('id_credit', creditIds)
+        .eq('statut', 'completed');
+
+      const sumByCredit = {};
+      (remb || []).forEach((r) => {
+        sumByCredit[r.id_credit] = (sumByCredit[r.id_credit] || 0) + Number(r.montant);
+      });
+
+      result.forEach((r) => {
+        const paye = sumByCredit[r.id] || 0;
+        r.remainingDue = Math.max(0, r.totalArembourser - paye);
+        r.remainingPayments = Math.ceil(r.remainingDue / r.monthlyPayment) || 0;
+        const payees = r.totalPayments - r.remainingPayments;
+        const nextDue = new Date(r._dateDebut);
+        nextDue.setMonth(nextDue.getMonth() + payees);
+        r.nextDueDate = nextDue.toISOString().slice(0, 10);
+        delete r._dateDebut;
+      });
+    }
+
+    res.json({ ok: true, credits: result });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getSimulate = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const amount = Number(req.query.amount) || 50000;
+    const duration = Number(req.query.duration) || 3;
+
+    const sim = await rateService.simulate(id, amount, duration, null);
+    if (!sim) {
+      return res.status(400).json({ ok: false, message: 'Paramètres invalides' });
+    }
+    if (!sim.ok) {
+      return res.status(400).json(sim);
+    }
+    res.json({ ok: true, ...sim });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { getProfile, updateProfile, deleteAccount, getCredits, getSimulate };

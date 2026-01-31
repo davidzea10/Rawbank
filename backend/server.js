@@ -8,6 +8,7 @@ const healthRoutes = require('./routes/healthRoutes');
 const operateursRoutes = require('./routes/operateursRoutes');
 const authRoutes = require('./routes/authRoutes');
 const usersRoutes = require('./routes/usersRoutes');
+const scoreRoutes = require('./routes/scoreRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -20,6 +21,7 @@ app.use(healthRoutes);
 app.use('/api/operateurs', operateursRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/score', scoreRoutes);
 
 app.use((req, res, next) => {
   res.status(404).json({ ok: false, message: 'Route non trouvée' });
