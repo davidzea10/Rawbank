@@ -12,10 +12,16 @@ import warnings
 warnings.filterwarnings('ignore', category=UserWarning, module='lightgbm')
 os.environ['LIGHTGBM_VERBOSE'] = '-1'
 
-# Chemin du modèle (relatif au script)
+# Chemin du modèle : depuis backend/ml/predict.py -> projet/Ml/credit_scoring_lgbm.pkl
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.dirname(os.path.dirname(SCRIPT_DIR))
+BACKEND_DIR = os.path.dirname(SCRIPT_DIR)  # backend/
+PROJECT_ROOT = os.path.dirname(BACKEND_DIR)  # MicroScore/
 MODEL_PATH = os.path.join(PROJECT_ROOT, 'Ml', 'credit_scoring_lgbm.pkl')
+# Fallback si Ml/ à côté de backend/
+if not os.path.exists(MODEL_PATH):
+    MODEL_PATH = os.path.join(BACKEND_DIR, '..', 'Ml', 'credit_scoring_lgbm.pkl')
+if not os.path.exists(MODEL_PATH):
+    MODEL_PATH = os.path.join(PROJECT_ROOT, 'ML', 'credit_scoring_lgbm.pkl')  # ML majuscule
 
 FEATURE_COLS = [
     'avg_transaction_amount', 'transaction_amount_std', 'avg_balance',
@@ -35,12 +41,14 @@ def main():
         data = json.loads(input_str)
 
         # Charger le modèle
+        if not os.path.exists(MODEL_PATH):
+            raise FileNotFoundError(f'Modèle introuvable: {MODEL_PATH}')
         with open(MODEL_PATH, 'rb') as f:
             model = pickle.load(f)
 
-        # Préparer les features dans l'ordre attendu
-        row = {col: float(data.get(col, 0)) for col in FEATURE_COLS}
-        df = pd.DataFrame([row])
+        # Préparer les features dans l'ordre attendu (LightGBM exige le même ordre qu'à l'entraînement)
+        row = [float(data.get(col) if data.get(col) is not None else 0) for col in FEATURE_COLS]
+        df = pd.DataFrame([row], columns=FEATURE_COLS)
 
         # Prédiction
         score = model.predict(df)[0]

@@ -2,7 +2,6 @@ import { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   CreditCard,
-  BookOpen,
   DollarSign,
   Clock,
   CheckCircle,

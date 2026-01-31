@@ -1,11 +1,11 @@
 /**
  * Configuration API RawFinance Pro
- * En dev local : localhost:3001 (backend Express)
- * En production Vercel : même origine (vide = /api)
+ * - Dev (npm run dev) : backend sur localhost:3001
+ * - Prod (servi par Express) : même origine, URL vide
  */
 export const API_BASE_URL = import.meta.env.DEV
   ? 'http://localhost:3001'
-  : (import.meta.env.VITE_API_URL || '');
+  : (import.meta.env.VITE_API_URL ?? '');
 
 export const api = {
   auth: {

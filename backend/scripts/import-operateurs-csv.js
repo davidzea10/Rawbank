@@ -23,14 +23,17 @@ if (!supabaseUrl || !supabaseKey) {
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Chemin du CSV (depuis la racine MicroScore)
-const csvPath = path.join(__dirname, '..', '..', 'ML', 'credit_df_5000.csv');
+// Chemin du CSV (depuis la racine MicroScore) - Ml ou ML
+let csvPath = path.join(__dirname, '..', '..', 'Ml', 'credit_df_5000.csv');
+if (!fs.existsSync(csvPath)) {
+  csvPath = path.join(__dirname, '..', '..', 'ML', 'credit_df_5000.csv');
+}
 
 async function importCsv() {
   console.log('Lecture du fichier:', csvPath);
 
   if (!fs.existsSync(csvPath)) {
-    console.error('Fichier introuvable:', csvPath);
+    console.error('Fichier introuvable. Vérifiez Ml/credit_df_5000.csv ou ML/credit_df_5000.csv');
     process.exit(1);
   }
 

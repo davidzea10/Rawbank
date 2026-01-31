@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 
 const corsOptions = require('./config/cors');
 const errorHandler = require('./middlewares/errorHandler');
@@ -17,22 +18,40 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use(healthRoutes);
+// API routes
+app.use('/api', healthRoutes);
 app.use('/api/operateurs', operateursRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/score', scoreRoutes);
 
-app.use((req, res, next) => {
-  res.status(404).json({ ok: false, message: 'Route non trouvée' });
-});
+// Frontend - backend/public (copie de frontend/dist)
+const publicPath = path.join(__dirname, 'public');
+
+if (require('fs').existsSync(publicPath)) {
+  app.use(express.static(publicPath));
+  // Route / pour servir le frontend
+  app.get('/', (req, res) => {
+    res.sendFile(path.join(publicPath, 'index.html'));
+  });
+  // SPA fallback : autres routes frontend → index.html
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api/')) {
+      return res.status(404).json({ ok: false, message: 'Route API non trouvée' });
+    }
+    res.sendFile(path.join(publicPath, 'index.html'));
+  });
+} else {
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api/')) return next();
+    res.send('<h1>RawFinance Pro</h1><p>Exécutez <code>npm run build</code> à la racine pour compiler le frontend.</p>');
+  });
+}
 
 app.use(errorHandler);
 
-if (!process.env.VERCEL) {
-  app.listen(PORT, () => {
-    console.log(`Serveur démarré sur http://localhost:${PORT}`);
-  });
-}
+app.listen(PORT, () => {
+  console.log(`Serveur démarré sur http://localhost:${PORT}`);
+});
 
 module.exports = app;

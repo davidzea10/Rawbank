@@ -7,7 +7,6 @@ import {
   Clock,
   CheckCircle,
   AlertTriangle,
-  ChevronRight,
   RefreshCw,
   Smartphone,
   X
@@ -127,7 +126,7 @@ export function RepaymentPage() {
             ...c,
             remainingDue: Math.max(0, newRemaining),
             remainingPayments: newPayments,
-            status: newRemaining <= 0 ? 'Remboursé' : c.status,
+            statut: newRemaining <= 0 ? 'completed' : c.statut,
           };
         })
       );

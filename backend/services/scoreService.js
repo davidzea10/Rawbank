@@ -61,13 +61,16 @@ function predictScore(features) {
     const featuresForModel = {};
     for (const col of FEATURE_COLS) {
       const v = features[col];
-      featuresForModel[col] = v != null ? parseFloat(v) : 0;
+      const num = (v != null && v !== '') ? parseFloat(String(v)) : 0;
+      featuresForModel[col] = Number.isNaN(num) ? 0 : num;
     }
 
     const scriptPath = path.join(__dirname, '..', 'ml', 'predict.py');
+    const backendDir = path.join(__dirname, '..');
     const pyCmd = process.platform === 'win32' ? 'python' : 'python3';
     const py = spawn(pyCmd, [scriptPath], {
-      cwd: path.join(__dirname, '..'),
+      cwd: backendDir,
+      env: { ...process.env, PYTHONUNBUFFERED: '1' },
     });
 
     let stdout = '';
