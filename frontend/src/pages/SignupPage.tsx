@@ -15,6 +15,7 @@ import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { Input, Select } from '../components/Input';
 import { useUser } from '../context/UserContext';
+import { api } from '../config/api';
 
 type Step = 'phone' | 'identification' | 'profile' | 'mobile-money' | 'confirmation';
 
@@ -133,7 +134,7 @@ export function SignupPage() {
         mobile_money_lie: formData.operator,
       };
 
-      const apiUrl = 'https://rawbank.onrender.com/api/auth/register';
+      const apiUrl = api.auth.register;
 
       // Afficher l'URL et les données envoyées dans la console (debug)
       console.log('=== ENVOI DE LA REQUÊTE ===');

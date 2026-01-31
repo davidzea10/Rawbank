@@ -1,11 +1,11 @@
 /**
  * Configuration API RawFinance Pro
- * En dev local (npm run dev) : utilise localhost:3001
- * En production : VITE_API_URL ou Render
+ * En dev local : localhost:3001 (backend Express)
+ * En production Vercel : même origine (vide = /api)
  */
 export const API_BASE_URL = import.meta.env.DEV
   ? 'http://localhost:3001'
-  : (import.meta.env.VITE_API_URL || 'https://rawbank.onrender.com');
+  : (import.meta.env.VITE_API_URL || '');
 
 export const api = {
   auth: {

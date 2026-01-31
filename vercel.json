@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "buildCommand": "cd frontend && npm install && npm run build",
+  "outputDirectory": "frontend/dist",
+  "framework": null,
+  "rewrites": [
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ],
+  "installCommand": "cd backend && npm install && cd ../frontend && npm install",
+  "functions": {
+    "api/users/[id]/score.py": {
+      "runtime": "python3.9",
+      "memory": 1024,
+      "excludeFiles": "frontend/**"
+    }
+  }
+}
